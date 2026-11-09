@@ -1,0 +1,10 @@
+name = "fc-uae"
+pages_build_output_dir = "public"
+compatibility_date = "2024-11-01"
+
+# KV lưu danh sách thành viên + ảnh.
+# Tạo bằng:  npx wrangler kv namespace create fc-uae-db
+# rồi dán id nhận được vào dòng dưới.
+[[kv_namespaces]]
+binding = "DB"
+id = "0f4bc9fafd8c4d8683847b595b9ef997"

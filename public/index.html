@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FC UAE – Danh sách thành viên</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Oswald:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --red:#c8102e; --red-dark:#8f0b20; --red-soft:#fbe9ec; --ink:#1f2328; --muted:#6b7280;
+    --line:#dfe3e8; --cell:#eef1f4; --bg:#eceff3; --gold:#d9a400;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:"Be Vietnam Pro",system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:14px}
+  button{font:inherit}
+
+  /* ---------- TOOLBAR (thanh mảnh, không chiếm chỗ) ---------- */
+  .toolbar{position:sticky;top:0;z-index:5;background:#fff;border-bottom:1px solid var(--line)}
+  .toolbar-inner{max-width:1040px;margin:auto;padding:8px 20px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .search{flex:1 1 180px;position:relative}
+  .search input{width:100%;padding:7px 10px 7px 32px;border:1px solid var(--line);border-radius:6px;font:inherit;font-size:13px;outline:none}
+  .search svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--muted)}
+  .search input:focus,.field input:focus{border-color:var(--red)}
+  select,.btn{border:1px solid var(--line);background:#fff;border-radius:6px;padding:6px 10px;
+    font:inherit;font-size:13px;font-weight:500;cursor:pointer;color:var(--ink)}
+  .btn{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+  .btn:hover{background:#f6f7f9}
+  .btn.primary{background:var(--red);border-color:var(--red);color:#fff}
+  .btn.primary:hover{background:var(--red-dark)}
+  .btn.danger{color:var(--red)}
+  .btn .dot{width:7px;height:7px;border-radius:50%;background:var(--gold);display:none}
+  .btn.dirty .dot{display:inline-block}
+  .actions{display:flex;gap:6px;flex-wrap:wrap}
+
+  .notice{max-width:1040px;margin:10px auto 0;padding:0 20px;display:none}
+  .notice div{background:#fff8e1;border:1px solid #f1dc93;color:#6b5400;border-radius:6px;
+    padding:7px 12px;font-size:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .notice button{background:none;border:none;color:var(--red-dark);font-weight:600;cursor:pointer;text-decoration:underline;font-size:12px}
+
+  /* ---------- TRANG HỒ SƠ ---------- */
+  .sheet{max-width:1040px;margin:20px auto 40px;background:#fff;border-radius:4px;
+    box-shadow:0 1px 3px rgba(0,0,0,.08);padding:28px 32px 32px}
+  .sheet-head{display:grid;grid-template-columns:90px 1fr 90px;align-items:center;gap:16px;
+    padding-bottom:18px;border-bottom:2px solid var(--red)}
+  .sheet-head img{width:84px;height:auto}
+  .sheet-head .title{text-align:center}
+  .sheet-head h1{font-size:26px;font-weight:800;letter-spacing:.5px;text-transform:uppercase}
+  .sheet-head p{margin-top:6px;color:var(--red);font-size:20px;font-weight:700;letter-spacing:2px}
+  #app{margin-top:22px}
+
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--line);border-left:1px solid var(--line)}
+
+  /* ---------- Ô THÀNH VIÊN (giống mẫu) ---------- */
+  .card{position:relative;border-right:1px solid var(--line);border-bottom:1px solid var(--line);cursor:pointer;background:#fff}
+  .card:hover{background:#fcfcfd}
+  .card:hover .role{background:var(--red-dark)}
+  .card.dragging{opacity:.35}
+  .card.drop-before{box-shadow:inset 4px 0 0 var(--red)}
+  .card.drop-after{box-shadow:inset -4px 0 0 var(--red)}
+  .role{background:var(--red);color:#fff;text-align:center;font-size:13px;font-weight:600;padding:5px 8px;letter-spacing:.3px}
+  .card.captain .role{background:var(--ink)}
+  .card.captain .role::before{content:"★ ";color:var(--gold)}
+  .body{display:grid;grid-template-columns:118px 1fr;align-items:stretch}
+  .avatar{padding:8px;display:flex;align-items:center;justify-content:center}
+  .avatar .photo{width:100px;height:100px;border-radius:50%;overflow:hidden;position:relative;
+    background:linear-gradient(160deg,#3a3f4b,#1d2027);border:3px solid #fff;box-shadow:0 0 0 1px var(--line)}
+  .photo img{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none}
+  .initials{position:absolute;inset:0;display:grid;place-items:center;color:#fff;font-weight:600;font-size:28px;letter-spacing:1px}
+  .rows{display:grid;grid-template-rows:1.3fr 1fr 1fr;text-align:center}
+  .rows > div{display:flex;align-items:center;justify-content:center;padding:6px 10px;border-left:1px solid var(--line)}
+  .rows > div:nth-child(odd){background:var(--cell)}
+  .rows > div + div{border-top:1px solid #fff}
+  .rows .name{font-weight:600;font-size:15px;line-height:1.3}
+  .rows .num b{margin-left:4px}
+  .rows .num em{font-style:normal;margin-left:8px;font-size:11px;font-weight:600;color:var(--muted);
+    border:1px solid var(--line);border-radius:4px;padding:1px 5px;background:#fff}
+
+  .tools{position:absolute;top:3px;right:4px;z-index:3;display:flex;gap:2px;opacity:0;transition:.12s}
+  .card:hover .tools,.card:focus-within .tools{opacity:1}
+  .tools span{width:22px;height:22px;border-radius:4px;display:grid;place-items:center;font-size:12px;color:#fff}
+  .tools span:hover{background:rgba(255,255,255,.22)}
+  .tools .handle{cursor:grab}
+
+  .add-card{border:none;border-right:1px solid var(--line);border-bottom:1px solid var(--line);background:#fafbfc;
+    color:var(--muted);font-weight:500;cursor:pointer;min-height:148px;display:flex;align-items:center;justify-content:center;gap:8px}
+  .add-card:hover{color:var(--red);background:var(--red-soft)}
+  .add-card b{font-size:34px;font-weight:300;line-height:1}
+
+  .empty,.error{text-align:center;padding:40px 20px;color:var(--muted)}
+  .error{border:1px dashed #e8b4bd;border-radius:6px;margin-bottom:16px}
+  .error code,footer code{background:#f3f4f6;padding:1px 5px;border-radius:3px;font-size:12px}
+  footer{text-align:center;font-size:12px;color:var(--muted);padding:0 0 24px}
+
+  /* ---------- MODAL ---------- */
+  .overlay{position:fixed;inset:0;z-index:50;background:rgba(15,17,22,.45);
+    display:none;align-items:center;justify-content:center;padding:16px}
+  .overlay.open{display:flex}
+  .modal{background:#fff;border-radius:8px;width:min(620px,100%);max-height:calc(100vh - 32px);overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+  .modal-head{display:flex;align-items:center;justify-content:space-between;background:var(--red);color:#fff;padding:10px 16px;border-radius:8px 8px 0 0}
+  .modal-head h3{font-size:15px;font-weight:600}
+  .x{border:none;background:none;color:#fff;font-size:16px;cursor:pointer;width:28px;height:28px;border-radius:4px}
+  .x:hover{background:rgba(255,255,255,.18)}
+  .modal-body{padding:20px;display:grid;grid-template-columns:140px 1fr;gap:20px}
+  .preview{display:flex;flex-direction:column;align-items:center;gap:8px}
+  .preview .photo{width:120px;height:120px;border-radius:50%;overflow:hidden;position:relative;cursor:pointer;
+    background:linear-gradient(160deg,#3a3f4b,#1d2027);box-shadow:0 0 0 1px var(--line)}
+  .preview .photo:hover::after{content:"Đổi ảnh";position:absolute;inset:0;display:grid;place-items:center;
+    background:rgba(0,0,0,.45);color:#fff;font-size:12px;font-weight:600}
+  .preview small{font-size:11px;color:var(--muted);text-align:center}
+  .preview .btn{font-size:12px;padding:4px 10px}
+  .fields{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .field{display:flex;flex-direction:column;gap:4px}
+  .field.full{grid-column:1/-1}
+  .field label{font-size:12px;font-weight:600;color:#4b5563}
+  .field input{padding:7px 10px;border:1px solid var(--line);border-radius:6px;font:inherit;font-size:14px;outline:none}
+  .field .err{font-size:12px;color:var(--red)}
+  .seg{display:flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+  .seg label{flex:1;text-align:center;padding:6px 4px;cursor:pointer;font-size:13px;font-weight:500;color:#4b5563}
+  .seg label + label{border-left:1px solid var(--line)}
+  .seg input{display:none}
+  .seg label:has(input:checked){background:var(--red);color:#fff}
+  .modal-foot{display:flex;gap:8px;padding:12px 20px;border-top:1px solid var(--line);background:#fafbfc;border-radius:0 0 8px 8px}
+  .modal-foot .spacer{flex:1}
+
+  .toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%) translateY(16px);z-index:60;
+    background:var(--ink);color:#fff;padding:8px 14px;border-radius:6px;font-size:13px;
+    opacity:0;pointer-events:none;transition:.2s}
+  .toast.show{opacity:1;transform:translateX(-50%)}
+
+  /* chế độ chỉ xem (chưa đăng nhập) & chế độ server */
+  .readonly .tools,.readonly .add-card,.readonly #btnAdd{display:none!important}
+  .readonly .card{cursor:default}
+  .server #btnOpen,.server #btnSave,.server .notice{display:none!important}
+  #btnLogin{display:none}.server #btnLogin{display:inline-flex}
+  .sync{font-size:12px;color:var(--muted)}
+
+  /* khi chụp ảnh: ẩn các nút chỉnh sửa */
+  .capturing .tools,.capturing .add-card{display:none!important}
+  .capturing .sheet{margin:0;box-shadow:none;border-radius:0}
+
+  @media (max-width:900px){ .grid{grid-template-columns:repeat(2,1fr)} }
+  @media (max-width:600px){
+    .sheet{margin:0;border-radius:0;padding:18px 14px}
+    .sheet-head{grid-template-columns:56px 1fr 0}.sheet-head img{width:56px}.sheet-head h1{font-size:18px}.sheet-head p{font-size:15px}
+    .grid{grid-template-columns:1fr}.tools{opacity:1}
+    .toolbar-inner,.notice{padding-left:14px;padding-right:14px}
+    .modal-body,.fields{grid-template-columns:1fr}
+  }
+  @media print{
+    .toolbar,footer,.tools,.add-card,.notice{display:none!important}
+    body{background:#fff}.sheet{box-shadow:none;margin:0;padding:0;max-width:none}
+    .card{break-inside:avoid}
+    *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  }
+</style>
+</head>
+<body>
+
+
+<div class="toolbar">
+  <div class="toolbar-inner">
+    <div class="search">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="q" type="search" placeholder="Tìm theo tên hoặc số áo…">
+    </div>
+    <select id="chips" title="Lọc"></select>
+    <select id="sort" title="Sắp xếp">
+      <option value="custom">Sắp xếp: Tùy chỉnh</option>
+      <option value="number">Sắp xếp: Số áo</option>
+      <option value="name">Sắp xếp: Tên</option>
+      <option value="age">Sắp xếp: Tuổi</option>
+    </select>
+    <div class="actions">
+      <button class="btn primary" id="btnAdd">＋ Thêm</button>
+      <button class="btn" id="btnOpen" title="Mở file JSON khác">Mở JSON</button>
+      <button class="btn" id="btnSave" title="Lưu ra players.json"><span class="dot"></span>Lưu JSON</button>
+      <button class="btn" id="btnShot" title="Tải ảnh PNG của bảng hồ sơ">Lưu ảnh</button>
+      <button class="btn" onclick="window.print()">In</button>
+      <button class="btn" id="btnLogin">Đăng nhập</button>
+    </div>
+  </div>
+</div>
+
+<div class="notice" id="notice"><div>
+  <span>Đang hiển thị bản nháp chưa lưu ra file (được giữ tự động trong trình duyệt).</span>
+  <button id="discard">Bỏ nháp, tải lại từ players.json</button>
+</div></div>
+
+<main class="sheet">
+  <div class="sheet-head">
+    <img src="logo.png" alt="FC UAE">
+    <div class="title"><h1>Danh sách thành viên</h1><p>FC UAE</p></div>
+    <span></span>
+  </div>
+  <div id="app"></div>
+</main>
+<footer id="footer">Click vào ô để sửa · Kéo thả để đổi thứ tự · Dữ liệu từ <code>players.json</code></footer>
+
+<!-- ===== Modal sửa / thêm ===== -->
+<div class="overlay" id="overlay">
+  <form class="modal" id="form" autocomplete="off" novalidate>
+    <div class="modal-head">
+      <h3 id="mTitle">Sửa thành viên</h3>
+      <button type="button" class="x" data-close>✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="preview">
+        <div class="photo" id="pPhoto" title="Click để chọn ảnh"></div>
+        <small>Click ảnh để tải lên, hoặc dán URL bên phải</small>
+        <button type="button" class="btn" id="pClear" style="justify-content:center">Xóa ảnh</button>
+        <input type="file" id="pFile" accept="image/*" hidden>
+      </div>
+      <div class="fields">
+        <div class="field full">
+          <label for="fName">Họ và tên *</label>
+          <input id="fName" required placeholder="VD: Nguyễn Văn A">
+          <div class="err" id="eName"></div>
+        </div>
+        <div class="field">
+          <label for="fNumber">Số áo *</label>
+          <input id="fNumber" type="number" min="0" max="99" required>
+          <div class="err" id="eNumber"></div>
+        </div>
+        <div class="field">
+          <label for="fDob">Ngày sinh</label>
+          <input id="fDob" type="date">
+        </div>
+        <div class="field full">
+          <label>Vai trò</label>
+          <div class="seg" id="fRole"></div>
+        </div>
+        <div class="field full">
+          <label>Vị trí</label>
+          <div class="seg" id="fPos"></div>
+        </div>
+        <div class="field full">
+          <label for="fPhoto">Ảnh (URL hoặc đường dẫn)</label>
+          <input id="fPhoto" placeholder="images/10.jpg hoặc https://…">
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button type="button" class="btn danger" id="btnDelete">Xóa thành viên</button>
+      <span class="spacer"></span>
+      <button type="button" class="btn" data-close>Hủy</button>
+      <button type="submit" class="btn primary">Lưu</button>
+    </div>
+  </form>
+</div>
+<input type="file" id="openFile" accept=".json,application/json" hidden>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ===== Cấu hình ===== */
+const DATA_URL = "players.json";
+const DRAFT_KEY = "fcuae_players_draft";
+const ROLES = {
+  "captain":      { label: "Đội trưởng", short: "C" },
+  "vice-captain": { label: "Đội phó",    short: "VC" },
+  "player":       { label: "Cầu thủ",    short: "" }
+};
+const POSITIONS = { GK: "Thủ môn", DF: "Hậu vệ", MF: "Tiền vệ", FW: "Tiền đạo" };
+const FILTERS = [
+  { key: "all", label: "Tất cả" },
+  { key: "leaders", label: "Ban cán sự" },
+  ...Object.entries(POSITIONS).map(([k, v]) => ({ key: k, label: v }))
+];
+
+let players = [], filter = "all", editingId = null, dirty = false, fileHandle = null;
+/* Chế độ server (Cloudflare): dữ liệu lấy từ /api, chỉ admin đã đăng nhập mới sửa được */
+const API = "/api";
+const KEY_STORE = "fcuae_admin_key";
+let server = false, adminKey = "";
+try { adminKey = localStorage.getItem(KEY_STORE) || ""; } catch {}
+const canEdit = () => !server || !!adminKey;
+const $ = s => document.querySelector(s);
+
+/* ===== Helpers ===== */
+const parseDate = d => {               // nhận "YYYY-MM-DD" hoặc "DD-MM-YYYY"
+  if (!d) return null;
+  const p = String(d).split(/[-/]/).map(Number);
+  if (p.length < 3 || p.some(isNaN)) return null;
+  return p[0] > 31 ? new Date(p[0], p[1] - 1, p[2]) : new Date(p[2], p[1] - 1, p[0]);
+};
+const toISO = d => d ? `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}` : "";
+const fmtDate = d => d ? d.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" }) : "—";
+const ageOf = d => {
+  if (!d) return null;
+  const n = new Date(); let a = n.getFullYear() - d.getFullYear();
+  if (n < new Date(n.getFullYear(), d.getMonth(), d.getDate())) a--;
+  return a;
+};
+const initials = name => (name || "?").trim().split(/\s+/).slice(-2).map(w => w[0]).join("").toUpperCase();
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+const rank = r => r === "captain" ? 0 : r === "vice-captain" ? 1 : 2;
+const nextId = () => players.reduce((m, p) => Math.max(m, +p.id || 0), 0) + 1;
+const photoHTML = p => p.photo
+  ? `<img src="${esc(p.photo)}" alt="" onerror="this.outerHTML='<div class=&quot;initials&quot;>${esc(initials(p.name))}</div>'">`
+  : `<div class="initials">${esc(initials(p.name))}</div>`;
+
+function toast(msg) {
+  const t = $("#toast"); t.textContent = msg; t.classList.add("show");
+  clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove("show"), 2200);
+}
+
+/* ===== Dữ liệu & lưu trữ ===== */
+function clean(list) {                  // bỏ field nội bộ khi xuất
+  return list.map(({ _dob, _age, ...p }) => p);
+}
+function load(data, fromDraft = false) {
+  if (!Array.isArray(data)) throw new Error("JSON phải là một mảng");
+  players = data.map(p => ({ ...p, dob: p.dob ? toISO(parseDate(p.dob)) || p.dob : "" }));
+  dirty = fromDraft; refreshAll();
+}
+function changed() {
+  dirty = true;
+  if (server) { refreshAll(); scheduleSync(); return; }
+  try { localStorage.setItem(DRAFT_KEY, JSON.stringify(clean(players))); } catch {}
+  refreshAll();
+}
+
+/* ===== Đồng bộ lên server (tự lưu sau mỗi thay đổi) ===== */
+async function api(path, opts = {}) {
+  const r = await fetch(API + path, { ...opts, headers: { "X-Admin-Key": adminKey, ...(opts.headers || {}) } });
+  if (r.status === 401) { logout(); throw new Error("Sai mật khẩu hoặc phiên đăng nhập đã hết"); }
+  if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || `Lỗi ${r.status}`);
+  return r.json();
+}
+let syncTimer = null;
+function scheduleSync() {
+  clearTimeout(syncTimer);
+  $("#footer").textContent = "Đang lưu…";
+  syncTimer = setTimeout(async () => {
+    try {
+      await api("/players", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(clean(players)) });
+      dirty = false; $("#footer").textContent = "Đã lưu lên server · " + new Date().toLocaleTimeString("vi-VN");
+    } catch (e) { $("#footer").textContent = "Chưa lưu được: " + e.message; toast("Không lưu được: " + e.message); }
+  }, 500);
+}
+function applyMode() {
+  document.body.classList.toggle("server", server);
+  document.body.classList.toggle("readonly", !canEdit());
+  $("#btnLogin").textContent = adminKey ? "Đăng xuất" : "Đăng nhập";
+  if (server) $("#footer").textContent = canEdit()
+    ? "Chế độ quản trị · Click vào ô để sửa · Kéo thả để đổi thứ tự · Tự động lưu"
+    : "Chế độ xem";
+  render();
+}
+async function login() {
+  const key = prompt("Nhập mật khẩu quản trị:"); if (!key) return;
+  adminKey = key;
+  try {
+    await api("/login", { method: "POST" });
+    try { localStorage.setItem(KEY_STORE, key); } catch {}
+    toast("Đã đăng nhập"); applyMode();
+  } catch (e) { adminKey = ""; toast(e.message); }
+}
+function logout() {
+  adminKey = ""; try { localStorage.removeItem(KEY_STORE); } catch {}
+  closeModal(); applyMode();
+}
+function refreshAll() {
+  players.forEach(p => { p._dob = parseDate(p.dob); p._age = ageOf(p._dob); });
+  $("#btnSave").classList.toggle("dirty", dirty);
+  $("#notice").style.display = dirty ? "block" : "none";
+  renderChips(); render();
+}
+
+async function save() {
+  const json = JSON.stringify(clean(players), null, 2);
+  try {
+    if (window.showSaveFilePicker) {           // Chrome / Edge: ghi thẳng vào file
+      if (!fileHandle) fileHandle = await showSaveFilePicker({
+        suggestedName: "players.json",
+        types: [{ description: "JSON", accept: { "application/json": [".json"] } }]
+      });
+      const w = await fileHandle.createWritable(); await w.write(json); await w.close();
+    } else {                                   // Trình duyệt khác: tải file về
+      const a = Object.assign(document.createElement("a"), {
+        href: URL.createObjectURL(new Blob([json], { type: "application/json" })), download: "players.json"
+      });
+      a.click(); URL.revokeObjectURL(a.href);
+    }
+    dirty = false;
+    try { localStorage.removeItem(DRAFT_KEY); } catch {}
+    refreshAll(); toast("Đã lưu players.json");
+  } catch (e) { if (e.name !== "AbortError") toast("Không lưu được: " + e.message); }
+}
+
+/* ===== Render ===== */
+function card(p) {
+  const role = ROLES[p.role] || ROLES.player;
+  return `
+  <article class="card ${esc(p.role)}" draggable="true" data-id="${esc(p.id)}" tabindex="0">
+    <div class="role">${role.label}</div>
+    <div class="tools">
+      <span class="handle" title="Kéo để di chuyển">⠿</span>
+      <span class="del" data-del title="Xóa">✕</span>
+    </div>
+    <div class="body">
+      <div class="avatar"><div class="photo">${photoHTML(p)}</div></div>
+      <div class="rows">
+        <div class="name">${esc(p.name)}</div>
+        <div>${fmtDate(p._dob).replaceAll("/", "-")}</div>
+        <div class="num">Số áo:<b>${esc(p.number ?? "—")}</b>${p.position ? `<em title="${POSITIONS[p.position] || ""}">${esc(p.position)}</em>` : ""}</div>
+      </div>
+    </div>
+  </article>`;
+}
+
+function render() {
+  const q = $("#q").value.trim().toLowerCase();
+  const sort = $("#sort").value;
+  let list = players.filter(p =>
+    (!q || (p.name || "").toLowerCase().includes(q) || String(p.number) === q) &&
+    (filter === "all" || (filter === "leaders" ? p.role !== "player" : p.position === filter))
+  );
+  const cmp = {
+    custom: () => 0,
+    number: (a, b) => (a.number ?? 999) - (b.number ?? 999),
+    name:   (a, b) => (a.name||"").split(" ").pop().localeCompare((b.name||"").split(" ").pop(), "vi"),
+    age:    (a, b) => (a._dob ?? 0) - (b._dob ?? 0)
+  }[sort];
+  // Đội trưởng → Đội phó → Cầu thủ, trong từng nhóm theo kiểu sắp xếp đã chọn
+  list = [...list].sort((a, b) => rank(a.role) - rank(b.role) || cmp(a, b));
+
+  $("#app").innerHTML = (list.length || !players.length)
+    ? `<div class="grid">${list.map(card).join("")}<button class="add-card" data-add title="Thêm thành viên"><b>＋</b></button></div>`
+    : `<div class="empty">Không tìm thấy thành viên phù hợp.</div>`;
+  if (sort !== "custom" || !canEdit()) document.querySelectorAll(".card").forEach(c => c.draggable = false);
+}
+
+function renderChips() {
+  $("#chips").innerHTML = FILTERS.map(f =>
+    `<option value="${f.key}" ${f.key === filter ? "selected" : ""}>Lọc: ${f.label}</option>`).join("");
+}
+
+/* ===== Modal sửa / thêm ===== */
+$("#fRole").innerHTML = Object.entries(ROLES).map(([k, v]) =>
+  `<label><input type="radio" name="role" value="${k}">${v.label}</label>`).join("");
+$("#fPos").innerHTML = Object.entries(POSITIONS).map(([k, v]) =>
+  `<label><input type="radio" name="pos" value="${k}">${v}</label>`).join("");
+
+function updatePreview() {
+  $("#pPhoto").innerHTML = photoHTML({ name: $("#fName").value, photo: $("#fPhoto").value.trim() }) +
+    ``;
+}
+function openModal(id = null) {
+  editingId = id;
+  const p = id != null ? players.find(x => String(x.id) === String(id))
+                       : { name: "", number: "", dob: "", role: "player", position: "MF", photo: "" };
+  $("#mTitle").textContent = id != null ? "Sửa thành viên" : "Thêm thành viên";
+  $("#btnDelete").style.display = id != null ? "" : "none";
+  $("#fName").value = p.name || ""; $("#fNumber").value = p.number ?? "";
+  $("#fDob").value = p.dob || ""; $("#fPhoto").value = p.photo || "";
+  (document.querySelector(`[name=role][value="${p.role || "player"}"]`) || {}).checked = true;
+  const pos = document.querySelector(`[name=pos][value="${p.position}"]`);
+  document.querySelectorAll("[name=pos]").forEach(r => r.checked = false);
+  if (pos) pos.checked = true;
+  $("#eName").textContent = $("#eNumber").textContent = "";
+  updatePreview();
+  $("#overlay").classList.add("open");
+  setTimeout(() => $("#fName").focus(), 50);
+}
+function closeModal() { $("#overlay").classList.remove("open"); editingId = null; }
+
+function removePlayer(id) {
+  const p = players.find(x => String(x.id) === String(id));
+  if (!p || !confirm(`Xóa "${p.name}" khỏi danh sách?`)) return false;
+  players = players.filter(x => x !== p);
+  changed(); toast(`Đã xóa ${p.name}`);
+  return true;
+}
+
+$("#form").addEventListener("submit", e => {
+  e.preventDefault();
+  const name = $("#fName").value.trim(), numRaw = $("#fNumber").value.trim();
+  const number = numRaw === "" ? null : Number(numRaw);
+  let ok = true;
+  $("#eName").textContent = name ? "" : (ok = false, "Vui lòng nhập tên");
+  if (number == null || number < 0 || number > 99) { $("#eNumber").textContent = "Số áo từ 0–99"; ok = false; }
+  else if (players.some(p => p.number === number && String(p.id) !== String(editingId))) {
+    $("#eNumber").textContent = `Số ${number} đã có người dùng`; ok = false;
+  } else $("#eNumber").textContent = "";
+  if (!ok) return;
+
+  const role = document.querySelector("[name=role]:checked")?.value || "player";
+  const data = {
+    name, number, role,
+    dob: $("#fDob").value,
+    position: document.querySelector("[name=pos]:checked")?.value || "",
+    photo: $("#fPhoto").value.trim()
+  };
+  if (role === "captain")                          // chỉ có 1 đội trưởng
+    players.forEach(p => { if (p.role === "captain" && String(p.id) !== String(editingId)) p.role = "player"; });
+
+  if (editingId != null) Object.assign(players.find(p => String(p.id) === String(editingId)), data);
+  else players.push({ id: nextId(), ...data });
+  toast(editingId != null ? "Đã cập nhật" : `Đã thêm ${name}`);
+  closeModal(); changed();
+});
+
+$("#btnDelete").onclick = () => { if (removePlayer(editingId)) closeModal(); };
+document.querySelectorAll("[data-close]").forEach(b => b.onclick = closeModal);
+$("#overlay").addEventListener("mousedown", e => { if (e.target.id === "overlay") closeModal(); });
+document.addEventListener("keydown", e => { if (e.key === "Escape" && $("#overlay").classList.contains("open")) closeModal(); });
+["#fName", "#fNumber", "#fPhoto"].forEach(s => $(s).addEventListener("input", updatePreview));
+$("#pPhoto").onclick = () => $("#pFile").click();
+$("#pClear").onclick = () => { $("#fPhoto").value = ""; updatePreview(); };
+
+// Tải ảnh lên → thu nhỏ còn 480px.
+//  - Chế độ server: upload lên /api/upload (lưu trong KV), trường photo = URL trả về
+//  - Chế độ file cục bộ: lưu dạng data URL ngay trong JSON
+$("#pFile").onchange = e => {
+  const f = e.target.files[0]; if (!f) return;
+  const img = new Image();
+  img.onload = () => {
+    URL.revokeObjectURL(img.src);
+    const s = Math.min(1, 480 / Math.max(img.width, img.height));
+    const c = Object.assign(document.createElement("canvas"), { width: Math.round(img.width * s), height: Math.round(img.height * s) });
+    const ctx = c.getContext("2d");
+    ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, c.width, c.height);   // nền trắng cho ảnh PNG trong suốt
+    ctx.drawImage(img, 0, 0, c.width, c.height);
+    if (!server) { $("#fPhoto").value = c.toDataURL("image/jpeg", 0.82); updatePreview(); return; }
+    const submit = $("#form [type=submit]"); submit.disabled = true;
+    $("#pPhoto").innerHTML = `<div class="initials" style="font-size:13px">Đang tải…</div>`;
+    c.toBlob(async blob => {
+      try {
+        const { url } = await api("/upload", { method: "POST", headers: { "Content-Type": "image/jpeg" }, body: blob });
+        $("#fPhoto").value = url;
+      } catch (err) { toast("Upload ảnh lỗi: " + err.message); }
+      submit.disabled = false; updatePreview();
+    }, "image/jpeg", 0.82);
+  };
+  img.onerror = () => toast("File không phải ảnh");
+  img.src = URL.createObjectURL(f); e.target.value = "";
+};
+
+/* ===== Kéo thả ===== */
+let dragId = null;
+const app = $("#app");
+app.addEventListener("dragstart", e => {
+  const c = e.target.closest(".card"); if (!c) return;
+  dragId = c.dataset.id; c.classList.add("dragging");
+  e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", dragId);
+});
+app.addEventListener("dragend", () => {
+  dragId = null;
+  document.querySelectorAll(".dragging,.drop-before,.drop-after").forEach(el => el.classList.remove("dragging", "drop-before", "drop-after"));
+});
+app.addEventListener("dragover", e => {
+  const c = e.target.closest(".card"); if (!dragId || !c || c.dataset.id === dragId) return;
+  e.preventDefault();
+  const r = c.getBoundingClientRect(), after = e.clientX > r.left + r.width / 2;
+  document.querySelectorAll(".drop-before,.drop-after").forEach(el => el.classList.remove("drop-before", "drop-after"));
+  c.classList.add(after ? "drop-after" : "drop-before");
+});
+app.addEventListener("drop", e => {
+  const c = e.target.closest(".card"); if (!dragId || !c) return;
+  e.preventDefault();
+  const after = c.classList.contains("drop-after");
+  const from = players.findIndex(p => String(p.id) === dragId);
+  const [moved] = players.splice(from, 1);
+  let to = players.findIndex(p => String(p.id) === c.dataset.id);
+  if (after) to++;
+  // kéo sang nhóm khác (Ban cán sự ↔ Cầu thủ) thì đổi vai trò theo nhóm đích
+  const target = players.find(p => String(p.id) === c.dataset.id);
+  const targetGroupLeader = target.role !== "player";
+  if (targetGroupLeader !== (moved.role !== "player")) {
+    if (targetGroupLeader) {
+      moved.role = "vice-captain";
+      toast(`${moved.name} → Đội phó (sửa lại trong thẻ nếu cần)`);
+    } else { moved.role = "player"; toast(`${moved.name} → Cầu thủ`); }
+  }
+  players.splice(to, 0, moved);
+  changed();
+});
+
+/* ===== Sự kiện chung ===== */
+app.addEventListener("click", e => {
+  if (!canEdit()) return;
+  if (e.target.closest("[data-add]")) return openModal();
+  const c = e.target.closest(".card"); if (!c) return;
+  if (e.target.closest("[data-del]")) return removePlayer(c.dataset.id);
+  openModal(c.dataset.id);
+});
+app.addEventListener("keydown", e => {
+  const c = e.target.closest(".card"); if (!canEdit()) return;
+  if (c && e.key === "Enter") openModal(c.dataset.id);
+  if (c && e.key === "Delete") removePlayer(c.dataset.id);
+});
+$("#q").addEventListener("input", render);
+$("#sort").addEventListener("change", render);
+$("#chips").addEventListener("change", e => { filter = e.target.value; render(); });
+$("#btnAdd").onclick = () => openModal();
+$("#btnLogin").onclick = () => adminKey ? logout() : login();
+$("#btnSave").onclick = save;
+
+/* ===== Lưu ảnh PNG của bảng hồ sơ ===== */
+function loadScript(src) {
+  return new Promise((ok, fail) => document.head.appendChild(
+    Object.assign(document.createElement("script"), { src, onload: ok, onerror: fail })));
+}
+async function saveImage() {
+  const btn = $("#btnShot"), label = btn.textContent;
+  btn.disabled = true; btn.textContent = "Đang chụp…";
+  document.body.classList.add("capturing");
+  try {
+    if (!window.htmlToImage)        // ưu tiên file cục bộ, không có thì lấy từ CDN
+      await loadScript("html-to-image.js")
+        .catch(() => loadScript("https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.js"));
+    const node = document.querySelector(".sheet");
+    const opts = { pixelRatio: 2, backgroundColor: "#ffffff", cacheBust: true };
+    let url;
+    try { url = await htmlToImage.toPng(node, opts); }
+    catch { url = await htmlToImage.toPng(node, { ...opts, skipFonts: true }); }   // dự phòng nếu lỗi tải font
+    const d = new Date(), stamp = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}`;
+    Object.assign(document.createElement("a"), { href: url, download: `danh-sach-thanh-vien-fc-uae-${stamp}.png` }).click();
+    toast("Đã lưu ảnh");
+  } catch (e) {
+    toast("Không chụp được ảnh (cần kết nối mạng lần đầu)");
+    console.error(e);
+  } finally {
+    document.body.classList.remove("capturing");
+    btn.disabled = false; btn.textContent = label;
+  }
+}
+$("#btnShot").onclick = saveImage;
+$("#btnOpen").onclick = () => $("#openFile").click();
+$("#openFile").onchange = e => {
+  const f = e.target.files[0]; if (!f) return;
+  f.text().then(t => { load(JSON.parse(t)); fileHandle = null; toast(`Đã mở ${f.name}`); })
+    .catch(err => toast("File JSON không hợp lệ: " + err.message));
+  e.target.value = "";
+};
+$("#discard").onclick = () => {
+  if (!confirm("Bỏ toàn bộ thay đổi chưa lưu?")) return;
+  try { localStorage.removeItem(DRAFT_KEY); } catch {}
+  fetchData();
+};
+window.addEventListener("beforeunload", e => { if (dirty && !server) { e.preventDefault(); e.returnValue = ""; } });
+
+function fetchData() {
+  fetch(DATA_URL, { cache: "no-store" })
+    .then(r => { if (!r.ok) throw 0; return r.json(); })
+    .then(d => load(d))
+    .catch(() => {
+      players = []; dirty = false; refreshAll();
+      $("#app").insertAdjacentHTML("afterbegin", `<div class="error" style="margin-bottom:24px">
+        <p>Không tải được <code>${DATA_URL}</code>.</p>
+        <p style="margin-top:6px;font-size:13px">Khi mở file trực tiếp (file://), trình duyệt chặn đọc JSON.
+        Chạy <code>python3 -m http.server</code> trong thư mục này rồi mở <code>http://localhost:8000</code>,
+        hoặc bấm <b>Mở JSON</b> để chọn file.</p></div>`);
+    });
+}
+
+/* ===== Khởi động =====
+   1. Có API (deploy trên Cloudflare) → chế độ server
+   2. Không có API (chạy file tĩnh) → dùng bản nháp trong trình duyệt hoặc players.json */
+(async () => {
+  try {
+    const r = await fetch(API + "/players", { cache: "no-store" });
+    if (r.ok && (r.headers.get("content-type") || "").includes("json")) {
+      server = true; load(await r.json()); applyMode(); return;
+    }
+  } catch {}
+  applyMode();
+  let draft = null;
+  try { draft = JSON.parse(localStorage.getItem(DRAFT_KEY)); } catch {}
+  if (Array.isArray(draft)) load(draft, true); else fetchData();
+})();
+</script>
+</body>
+</html>

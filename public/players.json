@@ -1,0 +1,16 @@
+[
+  { "id": 1,  "name": "Bùi Văn Phát",         "dob": "2008-08-09", "number": 10, "role": "captain",      "position": "MF", "photo": "images/10.jpg" },
+  { "id": 2,  "name": "Phùng Văn Sáng",       "dob": "2008-09-03", "number": 7,  "role": "vice-captain", "position": "FW", "photo": "images/7.jpg" },
+  { "id": 3,  "name": "Dương Văn Quân",       "dob": "2008-12-04", "number": 17, "role": "vice-captain", "position": "DF", "photo": "images/17.jpg" },
+  { "id": 4,  "name": "Nguyễn Anh Tuấn",      "dob": "2008-10-06", "number": 3,  "role": "player",       "position": "DF", "photo": "images/3.jpg" },
+  { "id": 5,  "name": "Dương Đạt Khởi",       "dob": "2008-06-29", "number": 6,  "role": "player",       "position": "MF", "photo": "images/6.jpg" },
+  { "id": 6,  "name": "Nguyễn Lê Huy",        "dob": "2008-06-30", "number": 9,  "role": "player",       "position": "FW", "photo": "images/9.jpg" },
+  { "id": 7,  "name": "Nguyễn Duy Anh Tiệp",  "dob": "2008-05-12", "number": 12, "role": "player",       "position": "MF", "photo": "images/12.jpg" },
+  { "id": 8,  "name": "Nguyễn Gia Hưng",      "dob": "2010-03-19", "number": 13, "role": "player",       "position": "FW", "photo": "images/13.jpg" },
+  { "id": 9,  "name": "Nguyễn Đức Minh",      "dob": "2007-09-20", "number": 16, "role": "player",       "position": "DF", "photo": "images/16.jpg" },
+  { "id": 10, "name": "Dương Công Thế Đan",   "dob": "2007-09-10", "number": 19, "role": "player",       "position": "MF", "photo": "images/19.jpg" },
+  { "id": 11, "name": "Nguyễn Duy Mạnh",      "dob": "2008-08-06", "number": 21, "role": "player",       "position": "DF", "photo": "images/21.jpg" },
+  { "id": 12, "name": "Nguyễn Duy Thịnh",     "dob": "2008-07-23", "number": 23, "role": "player",       "position": "MF", "photo": "images/23.jpg" },
+  { "id": 13, "name": "Nguyễn Đạt Huân",      "dob": "2008-09-25", "number": 25, "role": "player",       "position": "FW", "photo": "images/25.jpg" },
+  { "id": 14, "name": "Đỗ Trường Giang",      "dob": "2008-05-12", "number": 35, "role": "player",       "position": "GK", "photo": "images/35.jpg" }
+]
